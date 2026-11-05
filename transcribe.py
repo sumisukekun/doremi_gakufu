@@ -107,6 +107,67 @@ def extract_notes(y):
     return notes
 
 
+def extract_notes_bp(path):
+    """Basic Pitch（ONNX）で全部の音を取り、一番上の音＝メロディを選ぶ（ピアノ・楽器向け）"""
+    import logging; logging.disable(logging.WARNING)
+    from basic_pitch import ICASSP_2022_MODEL_PATH
+    from basic_pitch.inference import predict
+    _, _, events = predict(path, ICASSP_2022_MODEL_PATH, onset_threshold=0.5, frame_threshold=0.3,
+                           minimum_note_length=80, minimum_frequency=110, maximum_frequency=1400)
+    logging.disable(logging.NOTSET)
+    ev = [(float(s), float(e), int(p), float(a)) for s, e, p, a, *_ in events]
+    if not ev:
+        return []
+    amax = max(a for *_, a in ev)
+    ev = sorted([x for x in ev if x[3] >= 0.45 * amax], key=lambda x: x[0])
+    # ① ほぼ同時に鳴った音（和音）は一番上の音だけ残す
+    groups = []
+    for x in ev:
+        if groups and x[0] - groups[-1][0][0] < 0.06:
+            groups[-1].append(x)
+        else:
+            groups.append([x])
+    def real_top(g):
+        # 倍音（下の音の1オクターブ上・1オクターブ半上で、ずっと弱い音）は除く
+        cand = [x for x in g if not any(y[2] in (x[2]-12, x[2]-19, x[2]-24) and x[3] < 0.7 * y[3] for y in g)]
+        return max(cand or g, key=lambda x: x[2])
+    tops = [real_top(g) for g in groups]
+    # ② 前の音がまだ鳴っている間に始まった、それより低い音（伴奏）は捨てる
+    mel = []
+    for x in tops:
+        if mel and x[2] < mel[-1][2] - 2 and x[0] < mel[-1][1] - 0.05 and x[0] - mel[-1][0] < 0.35:
+            continue
+        mel.append(x)
+    # ③ 周りのメロディより大きく下にある音（左手の伴奏）を捨てる
+    ps = np.array([x[2] for x in mel])
+    keep = []
+    for i, x in enumerate(mel):
+        local = np.median(ps[max(0, i-4):i+5])
+        if x[2] >= local - 9:
+            keep.append(x)
+    # ④ 同じ高さの音が続く場合、その音の響きが本当に強くなっていなければ（ドラム等で切れただけなら）1音にまとめる
+    if keep:
+        y, _ = librosa.load(path, sr=SR, mono=True)
+        C0 = 36
+        cqt = np.abs(librosa.cqt(y, sr=SR, hop_length=HOP, fmin=librosa.midi_to_hz(C0), n_bins=72))
+        fr = lambda t: int(t * SR / HOP)
+        def energy(p, a, b):
+            seg = cqt[p - C0, max(0, fr(a)):max(fr(a) + 1, fr(b))]
+            return float(seg.mean()) if seg.size else 0.0
+        merged = [list(keep[0])]
+        for s_, e_, p_, a_ in keep[1:]:
+            ps_, pe_, pp_, pa_ = merged[-1]
+            if p_ == pp_ and s_ - pe_ < 0.08:
+                before = energy(p_, s_ - 0.07, s_ - 0.01)
+                after = energy(p_, s_ + 0.01, s_ + 0.06)
+                if after < before * 1.3:
+                    merged[-1][1] = e_
+                    continue
+            merged.append([s_, e_, p_, a_])
+        keep = [tuple(m) for m in merged]
+    return [{"midi": p, "start": s, "end": e} for s, e, p, a in keep]
+
+
 def quantize(notes, y):
     # テンポ：音の間隔の中で一番多い長さを「1拍」とみなす（伴奏が無くても動く）
     iois = np.diff([n["start"] for n in notes])
@@ -156,12 +217,19 @@ def label(notes):
     return notes
 
 
-def run(src, simplify_key=False):
+def run(src, simplify_key=False, mode="inst"):
     with tempfile.TemporaryDirectory() as wd:   # 取得した音声は処理後に自動削除
         path = fetch_audio(src, wd)
         path = separate_vocals(path, wd)
         y, _ = librosa.load(path, sr=SR, mono=True)
-    notes = extract_notes(y)
+        notes = None
+        if mode == "inst":                     # ピアノ・楽器：Basic Pitch
+            try:
+                notes = extract_notes_bp(path)
+            except ImportError:
+                pass
+        if notes is None:                      # 歌・鼻歌：pYIN
+            notes = extract_notes(y)
     bpm, notes = quantize(notes, y)
     info = {"bpm": bpm, "transposed": 0}
     if simplify_key:
@@ -175,8 +243,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("src"); ap.add_argument("-o", "--out", default="out.json")
     ap.add_argument("--simplify", action="store_true", help="ハ長調に移調して読みやすくする")
+    ap.add_argument("--mode", default="inst", choices=["inst", "voice"], help="inst=ピアノ・楽器 / voice=歌・鼻歌")
     a = ap.parse_args()
-    res = run(a.src, a.simplify)
+    res = run(a.src, a.simplify, a.mode)
     json.dump(res, open(a.out, "w"), ensure_ascii=False, indent=1)
     print(f"BPM {res['bpm']} / {len(res['notes'])}音 → {a.out}")
     print(" ".join(n["doremi"] for n in res["notes"]))

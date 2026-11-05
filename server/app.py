@@ -28,10 +28,10 @@ lock = threading.Lock()
 
 def worker():
     while True:
-        jid, src, simplify, tmpdir = work_q.get()
+        jid, src, simplify, tmpdir, mode = work_q.get()
         jobs[jid]["status"] = "running"
         try:
-            jobs[jid]["result"] = transcribe.run(src, simplify)
+            jobs[jid]["result"] = transcribe.run(src, simplify, mode)
             jobs[jid]["status"] = "done"
         except Exception as e:  # noqa
             jobs[jid].update(status="error", error=str(e)[:200])
@@ -57,7 +57,7 @@ def count_usage(ip):
 
 @app.post("/api/jobs")
 async def create_job(request: Request, url: str = Form(""), agree: str = Form(""),
-                     simplify: str = Form("1"), file: UploadFile | None = File(None)):
+                     simplify: str = Form("1"), mode: str = Form("inst"), file: UploadFile | None = File(None)):
     if agree != "1":
         raise HTTPException(400, "音源の利用権限の確認にチェックしてください")
     tmpdir = None
@@ -85,7 +85,7 @@ async def create_job(request: Request, url: str = Form(""), agree: str = Form(""
     count_usage(request.client.host if request.client else "?")
     jid = uuid.uuid4().hex[:12]
     jobs[jid] = {"status": "queued", "created": time.time()}
-    work_q.put((jid, src, simplify == "1", tmpdir))
+    work_q.put((jid, src, simplify == "1", tmpdir, "voice" if mode == "voice" else "inst"))
     return {"id": jid, "position": work_q.qsize()}
 
 

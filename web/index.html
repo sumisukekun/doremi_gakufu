@@ -20,6 +20,7 @@ input[type=url]:focus{outline:none;border-color:var(--acc)}
 .recbtn.on{animation:pulse 1s infinite}@keyframes pulse{50%{box-shadow:0 0 0 12px #e8673a33}}
 .opt{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--sub);margin-top:12px;line-height:1.5}
 .opt input{margin-top:3px;width:18px;height:18px;accent-color:var(--acc)}
+.seg{display:flex;gap:14px;align-items:center;font-size:14px;margin-top:14px;flex-wrap:wrap}.seg span{color:var(--sub);font-size:13px}.seg input{accent-color:var(--acc)}
 .go{width:100%;margin-top:14px;border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:800;background:var(--acc);color:#fff}
 .go:disabled{opacity:.4}
 .err{color:#c0392b;font-size:14px;margin-top:10px;min-height:1em}
@@ -48,6 +49,7 @@ input[type=range]{width:100px;accent-color:var(--acc)}
   <div data-p="yt"><input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." inputmode="url"></div>
   <div data-p="file" class="hidden"><label class="drop"><input type="file" id="file" accept="audio/*,video/mp4" hidden><span id="fname">タップして音声ファイルを選ぶ<br><small>mp3 / m4a / wav（10分以内）</small></span></label></div>
   <div data-p="mic" class="hidden"><div class="rec"><button class="recbtn" id="recbtn">●</button><div id="rectxt" style="font-size:14px;color:var(--sub)">タップして歌う・弾く（最大60秒）</div></div></div>
+  <div class="seg"><span>音の種類</span><label><input type="radio" name="mode" value="inst" checked> ピアノ・楽器</label><label><input type="radio" name="mode" value="voice"> 歌・鼻歌</label></div>
   <label class="opt"><input type="checkbox" id="simp" checked>ハ長調に直して読みやすくする（♯・♭をなくす）</label>
   <label class="opt"><input type="checkbox" id="agree">この音源を個人の練習のために使う権利があることを確認しました。作った楽譜は他の人に配りません。</label>
   <button class="go" id="go" disabled>楽譜にする</button>
@@ -76,7 +78,8 @@ let mode='yt', recBlob=null, player=null;
 
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   mode=b.dataset.t; document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  document.querySelectorAll('[data-p]').forEach(p=>p.classList.toggle('hidden',p.dataset.p!==mode)); check(); });
+  document.querySelectorAll('[data-p]').forEach(p=>p.classList.toggle('hidden',p.dataset.p!==mode));
+  if(mode==='mic') document.querySelector('input[name=mode][value=voice]').checked=true; check(); });
 function ready(){ return mode==='yt' ? /youtu/.test($('url').value) : mode==='file' ? $('file').files.length>0 : !!recBlob; }
 function check(){ $('go').disabled = !($('agree').checked && ready()); }
 ['url','agree'].forEach(id=>$(id).addEventListener('input',check)); $('agree').onchange=check;
@@ -100,7 +103,7 @@ $('recbtn').onclick=async()=>{
 
 $('go').onclick=async()=>{
   $('err').textContent='';
-  const fd=new FormData(); fd.append('agree','1'); fd.append('simplify',$('simp').checked?'1':'0');
+  const fd=new FormData(); fd.append('agree','1'); fd.append('simplify',$('simp').checked?'1':'0'); fd.append('mode',document.querySelector('input[name=mode]:checked').value);
   if(mode==='yt') fd.append('url',$('url').value.trim());
   if(mode==='file') fd.append('file',$('file').files[0]);
   if(mode==='mic') fd.append('file',recBlob,'rec.'+(recBlob.type.includes('mp4')?'mp4':'webm'));

@@ -6,3 +6,7 @@ yt-dlp
 fastapi
 uvicorn
 python-multipart
+onnxruntime
+pretty_midi
+mir_eval
+resampy
