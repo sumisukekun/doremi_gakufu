@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ドレミ楽譜 — 曲からかんたん楽譜</title>
+<style>
+:root{--bg:#fffaf3;--ink:#2b2b2b;--sub:#8a8173;--acc:#e8673a;--card:#fff;--soft:#efe6d8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Rounded Mplus 1c",system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:560px;margin:0 auto}
+header{padding:22px 18px 8px;padding-top:calc(22px + env(safe-area-inset-top))}
+.logo{font-size:24px;font-weight:800}.logo span{color:var(--acc)}.tag{color:var(--sub);font-size:13px;margin-top:4px}
+.card{background:var(--card);margin:12px 14px;border-radius:18px;padding:16px;box-shadow:0 2px 10px #0000000d}
+.tabs{display:flex;gap:6px;background:var(--soft);border-radius:999px;padding:4px;margin-bottom:14px}
+.tabs button{flex:1;border:0;background:none;padding:9px 0;border-radius:999px;font-size:14px;color:var(--sub);font-weight:700}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000001a}
+input[type=url]{width:100%;font-size:16px;padding:13px 14px;border:2px solid var(--soft);border-radius:12px;background:#fffdf9}
+input[type=url]:focus{outline:none;border-color:var(--acc)}
+.drop{display:block;border:2px dashed #d9cdb9;border-radius:12px;padding:22px;text-align:center;color:var(--sub);font-size:14px}
+.rec{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px}
+.recbtn{width:72px;height:72px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:26px}
+.recbtn.on{animation:pulse 1s infinite}@keyframes pulse{50%{box-shadow:0 0 0 12px #e8673a33}}
+.opt{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--sub);margin-top:12px;line-height:1.5}
+.opt input{margin-top:3px;width:18px;height:18px;accent-color:var(--acc)}
+.go{width:100%;margin-top:14px;border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:800;background:var(--acc);color:#fff}
+.go:disabled{opacity:.4}
+.err{color:#c0392b;font-size:14px;margin-top:10px;min-height:1em}
+.prog{text-align:center;padding:26px 10px;color:var(--sub)}
+.bar{height:8px;background:var(--soft);border-radius:9px;overflow:hidden;margin:14px 0}.bar i{display:block;height:100%;width:30%;background:var(--acc);border-radius:9px;animation:slide 1.4s infinite ease-in-out}
+@keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
+.hidden{display:none!important}
+.ctrl{display:flex;gap:8px;align-items:center;padding:10px 14px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:2;border-bottom:1px solid #eee3d3}
+.ctrl button{border:0;border-radius:999px;padding:10px 18px;font-size:15px;background:var(--acc);color:#fff;font-weight:700}
+.ctrl button.sec{background:var(--soft);color:var(--ink)}.ctrl label{font-size:13px;color:var(--sub)}
+input[type=range]{width:100px;accent-color:var(--acc)}
+.meta{color:var(--sub);font-size:13px;padding:4px 18px}
+#score svg{display:block;width:100%;height:auto}
+.kb{position:relative;height:90px;margin:8px 14px 20px}
+.w,.b{position:absolute;border:1px solid #9a9184;border-radius:0 0 6px 6px}
+.w{background:#fff;height:90px;display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--sub);padding-bottom:4px}
+.b{background:#333;height:56px;z-index:1}.on{background:var(--acc)!important;color:#fff!important}
+.now .head{fill:var(--acc)}.now text{fill:var(--acc);font-weight:700}
+.note-s{color:var(--sub);font-size:12px;padding:0 18px 30px;line-height:1.6}
+</style></head><body><div class="wrap">
+<header><div class="logo">ドレミ<span>楽譜</span></div><div class="tag">好きな曲のメロディを、ドレミ付きのかんたん楽譜に。</div></header>
+
+<!-- 入力 -->
+<section id="input" class="card">
+  <div class="tabs"><button data-t="yt" class="on">YouTube</button><button data-t="file">ファイル</button><button data-t="mic">録音・鼻歌</button></div>
+  <div data-p="yt"><input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." inputmode="url"></div>
+  <div data-p="file" class="hidden"><label class="drop"><input type="file" id="file" accept="audio/*,video/mp4" hidden><span id="fname">タップして音声ファイルを選ぶ<br><small>mp3 / m4a / wav（10分以内）</small></span></label></div>
+  <div data-p="mic" class="hidden"><div class="rec"><button class="recbtn" id="recbtn">●</button><div id="rectxt" style="font-size:14px;color:var(--sub)">タップして歌う・弾く（最大60秒）</div></div></div>
+  <label class="opt"><input type="checkbox" id="simp" checked>ハ長調に直して読みやすくする（♯・♭をなくす）</label>
+  <label class="opt"><input type="checkbox" id="agree">この音源を個人の練習のために使う権利があることを確認しました。作った楽譜は他の人に配りません。</label>
+  <button class="go" id="go" disabled>楽譜にする</button>
+  <div class="err" id="err"></div>
+</section>
+
+<!-- 処理中 -->
+<section id="progress" class="card hidden"><div class="prog"><div id="ptxt">メロディを聴き取っています…</div><div class="bar"><i></i></div><small>1曲あたり30秒〜2分ほどかかります</small></div></section>
+
+<!-- 結果 -->
+<section id="result" class="hidden">
+  <div class="ctrl"><button id="play">▶ 再生</button><button class="sec" id="stop">■</button>
+    <label>はやさ <input type="range" id="spd" min="0.5" max="1.5" step="0.1" value="1"> <span id="spdv">100%</span></label>
+    <button class="sec" id="again" style="margin-left:auto">別の曲</button></div>
+  <div class="meta" id="meta"></div>
+  <div id="score"></div>
+  <div class="kb" id="kb"></div>
+  <div class="note-s">自動で聴き取った結果のため、音がずれている場合があります。楽譜は個人の練習用です。</div>
+</section>
+</div>
+<script src="score.js"></script>
+<script>
+const API = window.DOREMI_API || '';   // アプリ版ではサーバーのURLを入れる
+const $ = id => document.getElementById(id);
+let mode='yt', recBlob=null, player=null;
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  mode=b.dataset.t; document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('[data-p]').forEach(p=>p.classList.toggle('hidden',p.dataset.p!==mode)); check(); });
+function ready(){ return mode==='yt' ? /youtu/.test($('url').value) : mode==='file' ? $('file').files.length>0 : !!recBlob; }
+function check(){ $('go').disabled = !($('agree').checked && ready()); }
+['url','agree'].forEach(id=>$(id).addEventListener('input',check)); $('agree').onchange=check;
+$('file').onchange=()=>{ $('fname').textContent=$('file').files[0]?.name||''; check(); };
+
+// マイク録音
+let rec=null, recTimer=null;
+$('recbtn').onclick=async()=>{
+  if(rec){ rec.stop(); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const chunks=[]; rec=new MediaRecorder(stream);
+    rec.ondataavailable=e=>chunks.push(e.data);
+    rec.onstop=()=>{ recBlob=new Blob(chunks,{type:rec.mimeType}); stream.getTracks().forEach(t=>t.stop());
+      clearTimeout(recTimer); rec=null; $('recbtn').classList.remove('on'); $('recbtn').textContent='●';
+      $('rectxt').textContent='録音できました（もう一度押すと録り直し）'; check(); };
+    rec.start(); recBlob=null; $('recbtn').classList.add('on'); $('recbtn').textContent='■'; $('rectxt').textContent='録音中… もう一度押すと終了';
+    recTimer=setTimeout(()=>rec&&rec.stop(),60000);
+  }catch(e){ $('err').textContent='マイクを使えませんでした'; }
+};
+
+$('go').onclick=async()=>{
+  $('err').textContent='';
+  const fd=new FormData(); fd.append('agree','1'); fd.append('simplify',$('simp').checked?'1':'0');
+  if(mode==='yt') fd.append('url',$('url').value.trim());
+  if(mode==='file') fd.append('file',$('file').files[0]);
+  if(mode==='mic') fd.append('file',recBlob,'rec.'+(recBlob.type.includes('mp4')?'mp4':'webm'));
+  show('progress');
+  try{
+    const r=await fetch(API+'/api/jobs',{method:'POST',body:fd}); const j=await r.json();
+    if(!r.ok) throw new Error(j.detail||'エラーが発生しました');
+    poll(j.id);
+  }catch(e){ show('input'); $('err').textContent=e.message; }
+};
+async function poll(id){
+  const r=await fetch(API+'/api/jobs/'+id); const j=await r.json();
+  if(j.status==='done') return showResult(j.result);
+  if(j.status==='error'){ show('input'); $('err').textContent=j.error; return; }
+  $('ptxt').textContent = j.status==='queued' ? '順番待ちです…' : 'メロディを聴き取っています…';
+  setTimeout(()=>poll(id),1500);
+}
+function show(id){ ['input','progress','result'].forEach(s=>$(s).classList.toggle('hidden',s!==id)); }
+function showResult(data){
+  if(!data.notes.length){ show('input'); $('err').textContent='メロディを聴き取れませんでした。別の音源で試してください。'; return; }
+  show('result');
+  $('meta').textContent=`テンポ ${data.bpm} ・ ${data.notes.length}音`+(data.original_key?` ・ 元のキー「${data.original_key}」→ ハ長調`:'');
+  player=DoremiScore.render(data,$('score'),$('kb'));
+}
+$('play').onclick=()=>player&&player.play(parseFloat($('spd').value));
+$('stop').onclick=()=>player&&player.stop();
+$('spd').oninput=()=>$('spdv').textContent=Math.round($('spd').value*100)+'%';
+$('again').onclick=()=>{ player&&player.stop(); show('input'); };
+</script></body></html>

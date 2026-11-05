@@ -1,0 +1,216 @@
+{
+ "bpm": 99,
+ "transposed": 0,
+ "notes": [
+  {
+   "midi": 64,
+   "start": 0.4876190476190476,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 64,
+   "start": 1.0681179138321995,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 65,
+   "start": 1.6834467120181407,
+   "beats": 1.0,
+   "doremi": "ファ",
+   "name": "F4"
+  },
+  {
+   "midi": 67,
+   "start": 2.2871655328798184,
+   "beats": 1.0,
+   "doremi": "ソ",
+   "name": "G4"
+  },
+  {
+   "midi": 67,
+   "start": 2.914104308390023,
+   "beats": 1.0,
+   "doremi": "ソ",
+   "name": "G4"
+  },
+  {
+   "midi": 65,
+   "start": 3.517823129251701,
+   "beats": 1.0,
+   "doremi": "ファ",
+   "name": "F4"
+  },
+  {
+   "midi": 64,
+   "start": 4.08671201814059,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 62,
+   "start": 4.702040816326531,
+   "beats": 1.0,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 60,
+   "start": 5.282539682539682,
+   "beats": 1.0,
+   "doremi": "ド",
+   "name": "C4"
+  },
+  {
+   "midi": 60,
+   "start": 5.874648526077097,
+   "beats": 1.0,
+   "doremi": "ド",
+   "name": "C4"
+  },
+  {
+   "midi": 62,
+   "start": 6.478367346938776,
+   "beats": 1.0,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 64,
+   "start": 7.082086167800454,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 64,
+   "start": 7.6741950113378685,
+   "beats": 1.5,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 62,
+   "start": 8.579773242630386,
+   "beats": 0.5,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 62,
+   "start": 8.870022675736962,
+   "beats": 2.0,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 64,
+   "start": 10.08907029478458,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 64,
+   "start": 10.669569160997732,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 65,
+   "start": 11.284897959183674,
+   "beats": 1.0,
+   "doremi": "ファ",
+   "name": "F4"
+  },
+  {
+   "midi": 67,
+   "start": 11.877006802721088,
+   "beats": 1.0,
+   "doremi": "ソ",
+   "name": "G4"
+  },
+  {
+   "midi": 67,
+   "start": 12.515555555555556,
+   "beats": 1.0,
+   "doremi": "ソ",
+   "name": "G4"
+  },
+  {
+   "midi": 65,
+   "start": 13.10766439909297,
+   "beats": 1.0,
+   "doremi": "ファ",
+   "name": "F4"
+  },
+  {
+   "midi": 64,
+   "start": 13.688163265306123,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 62,
+   "start": 14.280272108843537,
+   "beats": 1.0,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 60,
+   "start": 14.895600907029479,
+   "beats": 1.0,
+   "doremi": "ド",
+   "name": "C4"
+  },
+  {
+   "midi": 60,
+   "start": 15.47609977324263,
+   "beats": 1.0,
+   "doremi": "ド",
+   "name": "C4"
+  },
+  {
+   "midi": 62,
+   "start": 16.07981859410431,
+   "beats": 1.0,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 64,
+   "start": 16.683537414965986,
+   "beats": 1.0,
+   "doremi": "ミ",
+   "name": "E4"
+  },
+  {
+   "midi": 62,
+   "start": 17.29886621315193,
+   "beats": 1.5,
+   "doremi": "レ",
+   "name": "D4"
+  },
+  {
+   "midi": 60,
+   "start": 18.18122448979592,
+   "beats": 0.5,
+   "doremi": "ド",
+   "name": "C4"
+  },
+  {
+   "midi": 60,
+   "start": 18.471473922902494,
+   "beats": 2.0,
+   "doremi": "ド",
+   "name": "C4"
+  }
+ ]
+}
