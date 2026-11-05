@@ -13,9 +13,27 @@ MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 
 
 
 # ---------- 1. 入力 ----------
+def clean_youtube_url(url):
+    """プレイリスト・ミックス指定などを外して、動画1本のURLにする"""
+    import re
+    from urllib.parse import urlparse, parse_qs
+    u = urlparse(url.strip())
+    vid = None
+    if u.hostname and "youtu.be" in u.hostname:
+        vid = u.path.lstrip("/").split("/")[0]
+    elif "/shorts/" in u.path:
+        vid = u.path.split("/shorts/")[1].split("/")[0]
+    else:
+        vid = (parse_qs(u.query).get("v") or [None])[0]
+    if vid and re.fullmatch(r"[\w-]{6,20}", vid):
+        return f"https://www.youtube.com/watch?v={vid}"
+    return url
+
+
 def fetch_audio(src, workdir):
     """URLならyt-dlpで音声だけ取得してwavに。ファイルならそのまま。"""
     if src.startswith("http"):
+        src = clean_youtube_url(src)
         out = os.path.join(workdir, "in.%(ext)s")
         cmd = ["yt-dlp", "-x", "--audio-format", "wav", "--no-playlist",
                "--match-filter", "duration < 600", "-o", out, src]

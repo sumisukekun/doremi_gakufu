@@ -1,5 +1,7 @@
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+# YouTubeの取得に必要なJavaScript実行環境（Deno）
+COPY --from=denoland/deno:bin /deno /usr/local/bin/deno
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir --no-deps basic-pitch

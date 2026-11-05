@@ -2,7 +2,7 @@ librosa
 soundfile
 scipy
 numpy
-yt-dlp
+yt-dlp[default]
 fastapi
 uvicorn
 python-multipart
