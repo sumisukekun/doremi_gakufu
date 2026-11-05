@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     environment:
       - FREE_PER_DAY=${FREE_PER_DAY:-3}
+      - USE_DEMUCS=${USE_DEMUCS:-1}
+      - MAX_SEC=${MAX_SEC:-180}
   # HTTPS（マイク録音はHTTPSでないと動かないため必須）。証明書は自動取得
   caddy:
     image: caddy:2

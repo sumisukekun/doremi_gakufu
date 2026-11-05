@@ -3,9 +3,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir --no-deps basic-pitch
-# 実曲用のボーカル分離（Demucs）。イメージが約2GB増えるので、使う時だけ: docker compose build --build-arg WITH_DEMUCS=1
-ARG WITH_DEMUCS=0
-RUN if [ "$WITH_DEMUCS" = "1" ]; then pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir demucs; fi
+# 音の分離（Demucs, MIT）。CPU版torchを使う。モデルもビルド時に取得しておく
+ARG WITH_DEMUCS=1
+RUN if [ "$WITH_DEMUCS" = "1" ]; then \
+      pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+      pip install --no-cache-dir demucs && \
+      python -c "from demucs.pretrained import get_model; get_model('htdemucs')"; \
+    fi
 COPY transcribe.py ./
 COPY server ./server
 COPY web ./web

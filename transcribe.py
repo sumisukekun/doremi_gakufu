@@ -37,15 +37,45 @@ def fetch_audio(src, workdir):
     return src
 
 
-def separate_vocals(path, workdir):
-    """Demucsが入っていればボーカルだけ抜き出す（本番用）。無ければ原音のまま。"""
+MAX_SEC = int(os.environ.get("MAX_SEC", "180"))          # 採譜する長さの上限（秒）
+USE_DEMUCS = os.environ.get("USE_DEMUCS", "1") == "1"
+
+
+def separate(path, workdir, mode):
+    """Demucsで音を分ける（入っていなければ／失敗したら原音のまま）。
+    歌モード: ボーカルだけ / 楽器モード: ドラムとベースを除いた音"""
+    if not USE_DEMUCS:
+        return path
     try:
         import demucs  # noqa
+        import soundfile as sf
+        out = os.path.join(workdir, "sep")
+        r = subprocess.run([sys.executable, "-m", "demucs", "-n", "htdemucs", "-d", "cpu",
+                            "--segment", "7", "-j", "1", "-o", out, path],
+                           capture_output=True, text=True, timeout=900)
+        if r.returncode != 0:
+            raise RuntimeError(r.stderr[-300:])
+        stem_dir = os.path.join(out, "htdemucs", os.path.splitext(os.path.basename(path))[0])
+        if mode == "voice":
+            return os.path.join(stem_dir, "vocals.wav")
+        a, sr = sf.read(os.path.join(stem_dir, "other.wav"))
+        b, _ = sf.read(os.path.join(stem_dir, "vocals.wav"))
+        mix = os.path.join(workdir, "inst.wav")
+        sf.write(mix, a + b, sr)
+        return mix
     except ImportError:
         return path
-    subprocess.run([sys.executable, "-m", "demucs", "--two-stems", "vocals", "-o", workdir, path], check=True)
-    stem = os.path.splitext(os.path.basename(path))[0]
-    return os.path.join(workdir, "htdemucs", stem, "vocals.wav")
+    except Exception as e:  # noqa
+        print("demucs failed, using original:", e, file=sys.stderr)
+        return path
+
+
+def trim(path, workdir):
+    """長すぎる音源は最初の MAX_SEC 秒だけにする（処理時間とメモリ対策）"""
+    out = os.path.join(workdir, "trim.wav")
+    r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", path, "-t", str(MAX_SEC),
+                        "-ac", "2", "-ar", "44100", out], capture_output=True)
+    return out if r.returncode == 0 else path
 
 
 # ---------- 2. 音程検出 → 音符化 ----------
@@ -217,10 +247,17 @@ def label(notes):
     return notes
 
 
-def run(src, simplify_key=False, mode="inst"):
+def run(src, simplify_key=False, mode="inst", sep=None):
     with tempfile.TemporaryDirectory() as wd:   # 取得した音声は処理後に自動削除
         path = fetch_audio(src, wd)
-        path = separate_vocals(path, wd)
+        path = trim(path, wd)
+        if sep is None:
+            sep = (mode == "voice")
+        separated = False
+        if sep:
+            p2 = separate(path, wd, mode)
+            separated = p2 != path
+            path = p2
         y, _ = librosa.load(path, sr=SR, mono=True)
         notes = None
         if mode == "inst":                     # ピアノ・楽器：Basic Pitch
@@ -230,8 +267,20 @@ def run(src, simplify_key=False, mode="inst"):
                 pass
         if notes is None:                      # 歌・鼻歌：pYIN
             notes = extract_notes(y)
+    if separated:
+        notes = [n for n in notes if n["end"] - n["start"] >= 0.12] or notes
+    # ほかの音よりずっと小さい音（無音部分のノイズ）は捨てる
+    if len(notes) > 3:
+        rms = librosa.feature.rms(y=y, hop_length=HOP)[0]
+        def loud(n):
+            a, b = int(n["start"] * SR / HOP), max(int(n["start"] * SR / HOP) + 1, int(n["end"] * SR / HOP))
+            seg = rms[a:b]
+            return float(seg.mean()) if seg.size else 0.0
+        lv = [loud(n) for n in notes]
+        med = float(np.median(lv))
+        notes = [n for n, l in zip(notes, lv) if l >= 0.2 * med] or notes
     bpm, notes = quantize(notes, y)
-    info = {"bpm": bpm, "transposed": 0}
+    info = {"bpm": bpm, "transposed": 0, "separated": separated}
     if simplify_key:
         key, sh = simplify(notes)
         info.update(original_key=DOREMI[key], transposed=sh)
@@ -243,9 +292,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("src"); ap.add_argument("-o", "--out", default="out.json")
     ap.add_argument("--simplify", action="store_true", help="ハ長調に移調して読みやすくする")
+    ap.add_argument("--sep", type=int, default=None, help="1=伴奏・ドラムを除く 0=除かない（省略時は歌モードのみ除く）")
     ap.add_argument("--mode", default="inst", choices=["inst", "voice"], help="inst=ピアノ・楽器 / voice=歌・鼻歌")
     a = ap.parse_args()
-    res = run(a.src, a.simplify, a.mode)
+    res = run(a.src, a.simplify, a.mode, None if a.sep is None else bool(a.sep))
     json.dump(res, open(a.out, "w"), ensure_ascii=False, indent=1)
     print(f"BPM {res['bpm']} / {len(res['notes'])}音 → {a.out}")
     print(" ".join(n["doremi"] for n in res["notes"]))

@@ -50,6 +50,7 @@ input[type=range]{width:100px;accent-color:var(--acc)}
   <div data-p="file" class="hidden"><label class="drop"><input type="file" id="file" accept="audio/*,video/mp4" hidden><span id="fname">タップして音声ファイルを選ぶ<br><small>mp3 / m4a / wav（10分以内）</small></span></label></div>
   <div data-p="mic" class="hidden"><div class="rec"><button class="recbtn" id="recbtn">●</button><div id="rectxt" style="font-size:14px;color:var(--sub)">タップして歌う・弾く（最大60秒）</div></div></div>
   <div class="seg"><span>音の種類</span><label><input type="radio" name="mode" value="inst" checked> ピアノ・楽器</label><label><input type="radio" name="mode" value="voice"> 歌・鼻歌</label></div>
+  <label class="opt"><input type="checkbox" id="sep">伴奏・ドラムを取り除いてから聴き取る（歌入りの曲・バンドの曲向け。時間が長くかかります）</label>
   <label class="opt"><input type="checkbox" id="simp" checked>ハ長調に直して読みやすくする（♯・♭をなくす）</label>
   <label class="opt"><input type="checkbox" id="agree">この音源を個人の練習のために使う権利があることを確認しました。作った楽譜は他の人に配りません。</label>
   <button class="go" id="go" disabled>楽譜にする</button>
@@ -57,7 +58,7 @@ input[type=range]{width:100px;accent-color:var(--acc)}
 </section>
 
 <!-- 処理中 -->
-<section id="progress" class="card hidden"><div class="prog"><div id="ptxt">メロディを聴き取っています…</div><div class="bar"><i></i></div><small>1曲あたり30秒〜2分ほどかかります</small></div></section>
+<section id="progress" class="card hidden"><div class="prog"><div id="ptxt">メロディを聴き取っています…</div><div class="bar"><i></i></div><small>楽器ごとに音を分けてから聴き取るため、1〜4分ほどかかります（最初の3分まで）</small></div></section>
 
 <!-- 結果 -->
 <section id="result" class="hidden">
@@ -79,10 +80,11 @@ let mode='yt', recBlob=null, player=null;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
   mode=b.dataset.t; document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('[data-p]').forEach(p=>p.classList.toggle('hidden',p.dataset.p!==mode));
-  if(mode==='mic') document.querySelector('input[name=mode][value=voice]').checked=true; check(); });
+  if(mode==='mic'){ document.querySelector('input[name=mode][value=voice]').checked=true; $('sep').checked=false; } check(); });
 function ready(){ return mode==='yt' ? /youtu/.test($('url').value) : mode==='file' ? $('file').files.length>0 : !!recBlob; }
 function check(){ $('go').disabled = !($('agree').checked && ready()); }
 ['url','agree'].forEach(id=>$(id).addEventListener('input',check)); $('agree').onchange=check;
+document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=()=>{ $('sep').checked = r.value==='voice' && r.checked; });
 $('file').onchange=()=>{ $('fname').textContent=$('file').files[0]?.name||''; check(); };
 
 // マイク録音
@@ -103,7 +105,7 @@ $('recbtn').onclick=async()=>{
 
 $('go').onclick=async()=>{
   $('err').textContent='';
-  const fd=new FormData(); fd.append('agree','1'); fd.append('simplify',$('simp').checked?'1':'0'); fd.append('mode',document.querySelector('input[name=mode]:checked').value);
+  const fd=new FormData(); fd.append('agree','1'); fd.append('simplify',$('simp').checked?'1':'0'); fd.append('mode',document.querySelector('input[name=mode]:checked').value); fd.append('sep',$('sep').checked?'1':'0');
   if(mode==='yt') fd.append('url',$('url').value.trim());
   if(mode==='file') fd.append('file',$('file').files[0]);
   if(mode==='mic') fd.append('file',recBlob,'rec.'+(recBlob.type.includes('mp4')?'mp4':'webm'));
